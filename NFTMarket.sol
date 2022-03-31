@@ -325,7 +325,7 @@ contract NFTMarket is ReentrancyGuard {
         // send (listed amount - saleFee) to seller
         require(sendEther(it.seller, useramnt));
       } else {
-        require(sendEther(it.seller, userAmnt));
+        require(sendEther(it.seller, it.price));
       }
       if (IBids(bidsAdd).fetchBidId(itemId[i])>0) {
       /*~~~> Kill bid and refund bidValue <~~~*/
