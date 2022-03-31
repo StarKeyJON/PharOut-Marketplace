@@ -321,9 +321,11 @@ contract NFTMarket is ReentrancyGuard {
         uint256 saleFee = calcFee(it.price);
         uint256 userAmnt = it.price - saleFee;
         // send saleFee to rewards controller
-        payable(rewardsAdd).transfer(saleFee);
+        require(sendEther(rewardsAdd, saleFee));
         // send (listed amount - saleFee) to seller
-        payable(it.seller).transfer(userAmnt);
+        require(sendEther(it.seller, useramnt));
+      } else {
+        require(sendEther(it.seller, userAmnt));
       }
       if (IBids(bidsAdd).fetchBidId(itemId[i])>0) {
       /*~~~> Kill bid and refund bidValue <~~~*/
@@ -448,6 +450,16 @@ function transferFromERC721(address assetAddr, uint256 tokenId, address to) inte
     (bool success, bytes memory returnData) = address(assetAddr).call(data);
     require(success, string(returnData));
     return true;
+  }
+
+  /// @notice
+  /*~~~> 
+    Internal function for sending ether
+  <~~~*/
+  /// @return Bool
+  function sendEther(address recipient, uint ethvalue) internal nonReentrant returns (bool){
+    (bool success, bytes memory data) = address(recipient).call{value: ethvalue}("");
+    return(success);
   }
 
   /// @notice 
@@ -581,12 +593,22 @@ function transferFromERC721(address assetAddr, uint256 tokenId, address to) inte
     return true;
   }
 
+  /// @notice
+  /*~~~> 
+    Internal function for sending ether
+  <~~~*/
+  /// @return Bool
+  function sendEther(address recipient, uint ethvalue) internal nonReentrant returns (bool){
+    (bool success, bytes memory data) = address(recipient).call{value: ethvalue}("");
+    return(success);
+  }
+
   //*~~~> Fallback functions
   ///@notice
   /*~~~> External ETH transfer without function call forwarded to role provider contract <~~~*/
   event FundsForwarded(uint value, address from, address to);
   receive() external payable {
-    payable(roleAdd).transfer(msg.value);
+    require(sendEther(roleAdd, msg.value));
     emit FundsForwarded(msg.value, msg.sender, roleAdd);
   }
   function onERC1155Received(address, address, uint256, uint256, bytes memory) public virtual returns (bytes4) {
