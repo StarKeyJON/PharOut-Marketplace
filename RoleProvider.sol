@@ -208,11 +208,21 @@ contract MarketRoleProvider is AccessControl {
     return false;
   }
 
+  /// @notice
+  /*~~~> 
+    Internal function for sending ether
+  <~~~*/
+  /// @return Bool
+  function sendEther(address recipient, uint ethvalue) internal nonReentrant returns (bool){
+    (bool success, bytes memory data) = address(recipient).call{value: ethvalue}("");
+    return(success);
+  }
+
   ///@notice
   /*~~~> External ETH transfer forwarded to rewards contract <~~~*/
   event FundsForwarded(uint value, address from, address to);
   receive() external payable {
-    payable(rewardsAdd).transfer(msg.value);
+    require(sendEther(rewardsAdd, msg.value));
       emit FundsForwarded(msg.value, msg.sender, rewardsAdd);
   }
 }
