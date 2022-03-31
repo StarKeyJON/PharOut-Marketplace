@@ -538,6 +538,16 @@ function transferFromERC721(address assetAddr, uint256 tokenId, address to) inte
     return true;
   }
 
+  /// @notice
+  /*~~~> 
+    Internal function for sending ether
+  <~~~*/
+  /// @return Bool
+  function sendEther(address recipient, uint ethvalue) internal nonReentrant returns (bool){
+    (bool success, bytes memory data) = address(recipient).call{value: ethvalue}("");
+    return(success);
+  }
+
   /// @notice 
   /*~~~> 
     Calculating the platform fee, 
@@ -645,7 +655,7 @@ function transferFromERC721(address assetAddr, uint256 tokenId, address to) inte
   /*~~~> External ETH transfer forwarded to role provider contract <~~~*/
   event FundsForwarded(uint value, address from, address to);
   receive() external payable {
-    payable(roleAdd).transfer(msg.value);
+    require(sendEther(roleAdd, msg.value));
       emit FundsForwarded(msg.value, msg.sender, roleAdd);
   }
 }
