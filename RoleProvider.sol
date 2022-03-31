@@ -231,11 +231,10 @@ contract MarketRoleProvider is AccessControl {
     return(true);
   }
 
-  ///@notice
-  /*~~~> External ETH transfer forwarded to rewards contract <~~~*/
-  event FundsForwarded(uint value, address from, address to);
+  /*~~~>
+  Fallback functions
+  <~~~*/
   receive() external payable {
-    require(sendEther(rewardsAdd, msg.value));
-      emit FundsForwarded(msg.value, msg.sender, rewardsAdd);
+    emit Received(msg.sender, msg.value);
   }
 }
