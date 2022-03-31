@@ -376,7 +376,7 @@ contract RewardsControl is ReentrancyGuard {
     if (user.timestamp < clock.alpha && user.timestamp > clock.delta){
       if (user.claims==0){
         // Transfer the full ETH portion
-        payable(msg.sender).transfer(userSplits);
+        require(sendEther(msg.sender, userSplits));
       // Cycle through selected rewards tokens and send full portion
       uint tokenLen = contractAddress.length;
       for (uint i; i < tokenLen; i++) {
@@ -399,7 +399,7 @@ contract RewardsControl is ReentrancyGuard {
     if (user.timestamp < clock.delta && user.timestamp > clock.omega){
       if(user.claims <= 1){
         // Transfer half ETH portion
-        payable(msg.sender).transfer(userSplits / 2);
+        require(sendEther(msg.sender, (userSplits / 2)));
       // Cycle through selected rewards tokens and send half portion
       uint tokenLen = contractAddress.length;
       for (uint i; i < tokenLen; i++) {
@@ -421,7 +421,7 @@ contract RewardsControl is ReentrancyGuard {
       ///*~~~> user.timestamp == 95, is less than omega, 2 or less claims, gets 1/3 full reward;
     if (user.timestamp < clock.omega && user.claims <= 2){
         // Transfer 1/3 ETH portion
-        payable(msg.sender).transfer(userSplits / 3);
+        require(sendEther(msg.sender,(userSplits / 3)));
       uint tokenLen = contractAddress.length;
       // Cycle through selected rewards tokens and send 1/3 portion
       for (uint i; i < tokenLen; i++) {
@@ -472,7 +472,7 @@ contract RewardsControl is ReentrancyGuard {
     require(hodler.timestamp < (block.timestamp - 1 days));
     uint userRewards = (address(this).balance - (address(this).balance / 3));
     uint splits = userRewards - (userRewards / clock.howManyUsers);
-    payable(msg.sender).transfer(splits);
+    require(sendEther(msg.sender, splits));
     
     uint len = contractAddress.length;
     address[] memory adds;
@@ -547,10 +547,10 @@ contract RewardsControl is ReentrancyGuard {
     uint devSig = (address(this).balance / 24);
     uint devSplit = (devSig / devCount);
     if(msg.sender != devMultiPass){
-      payable(dev.devAddress).transfer(devSplit);
+      require(sendEther(dev.devAddress, devSplit));
       emit DevClaimed(msg.sender, devSplit, amnts, adds);
     } else {
-      payable(devMultiPass).transfer(devSig);
+      require(sendEther(devMultiPass, devSig));
       emit DevClaimed(msg.sender, devSig, amnts, adds);
     }
   }
@@ -572,7 +572,7 @@ contract RewardsControl is ReentrancyGuard {
     /// Dao gets 3/4 of 1/3 of total amount (3/12);
     uint daoSplit = (address(this).balance / 3);
     uint daoAmount = (daoSplit - (daoSplit / 4));
-    payable(daoAdd).transfer(daoAmount);
+    require(sendEther(daoAdd, daoAmount));
     /// update new amount
     uint count = tokenAddress.length;
     address[] memory adds;
@@ -706,6 +706,16 @@ contract RewardsControl is ReentrancyGuard {
 
   function transfer1155(address receiver, address nftContract, uint tokenId, uint amount) nonReentrant public hasAdmin {
     IERC1155(nftContract).safeTransferFrom(address(this), receiver, tokenId, amount, "");
+  }
+
+  /// @notice
+  /*~~~> 
+    Internal function for sending ether
+  <~~~*/
+  /// @return Bool
+  function sendEther(address recipient, uint ethvalue) internal nonReentrant returns (bool){
+    (bool success, bytes memory data) = address(recipient).call{value: ethvalue}("");
+    return(success);
   }
   
   /*~~~>
