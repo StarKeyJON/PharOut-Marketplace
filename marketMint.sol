@@ -210,6 +210,16 @@ contract Mint is ReentrancyGuard {
   }
 
   /// @notice
+  /*~~~> 
+    Internal function for sending ether
+  <~~~*/
+  /// @return Bool
+  function sendEther(address recipient, uint ethvalue) internal nonReentrant returns (bool){
+    (bool success, bytes memory data) = address(recipient).call{value: ethvalue}("");
+    return(success);
+  }
+
+  /// @notice
   /*~~~>
   Functions for retrieving memory items
   <~~~*/
@@ -245,7 +255,7 @@ contract Mint is ReentrancyGuard {
   ///@notice
   /*~~~> External ETH transfer forwarded to role provider contract <~~~*/
   receive() external payable {
-    payable(roleAdd).transfer(msg.value);
+    require(sendEther(roleAdd, msg.value));
   }
   function onERC1155Received(address, address, uint256, uint256, bytes memory) external virtual returns (bytes4) {
         return this.onERC1155Received.selector;
