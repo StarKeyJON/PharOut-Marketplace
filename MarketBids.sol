@@ -243,7 +243,7 @@ contract MarketBids is ReentrancyGuard {
         if (bidValue[i] <= existing.bidValue) revert();
         if (existing.bidValue < bidValue[i]) {
           //*~~~> Refund the failing bid
-          payable(existing.bidder).transfer(existing.bidValue);
+          require(sendEther(existing.bidder, existing.bidValue));
         }
       }
       uint bidId;
@@ -347,11 +347,11 @@ contract MarketBids is ReentrancyGuard {
           uint256 saleFee = calcFee(bid.bidValue);
           uint256 userAmnt = (bid.bidValue - saleFee);
           /// send saleFee to rewards controller
-          payable(rewardsAdd).transfer(saleFee);
+          require(sendEther(rewardsAdd, saleFee));
           /// send (bidValue - saleFee) to user
-          payable(msg.sender).transfer(userAmnt);
+          require(sendEther(msg.sender, userAmnt));
         } else {
-          payable(msg.sender).transfer(bid.bidValue);
+          require(sendEther(msg.sender, bid.bidValue));
         }
         if (!is1155[i]){
         //*~~~> Disallow if the msg.sender is not the token owner
@@ -387,7 +387,6 @@ contract MarketBids is ReentrancyGuard {
   function acceptBidForNft(
       uint[] memory bidId
   ) external nonReentrant returns (bool) {
-
     address marketNft = IRoleProvider(roleAdd).fetchAddress(NFT);
     address marketAdd = IRoleProvider(roleAdd).fetchAddress(MARKET);
     address offersAdd = IRoleProvider(roleAdd).fetchAddress(OFFERS);
@@ -403,11 +402,11 @@ contract MarketBids is ReentrancyGuard {
           uint256 saleFee = calcFee(bid.bidValue);
           uint256 userAmnt = (bid.bidValue - saleFee);
           /// send saleFee to rewards controller
-          payable(rewardsAdd).transfer(saleFee);
+          require(sendEther(rewardsAdd, saleFee));
           /// send (bidValue - saleFee) to user
-          payable(bid.seller).transfer(userAmnt);
+          require(sendEther(bid.seller, userAmnt));
       } else {
-        payable(bid.seller).transfer(bid.bidValue);
+        require(sendEther(bid.seller, bid.bidValue));
       }
       /*~~~> Check for the case where there is a trade and refund it. <~~~*/
       uint offerId = IOffers(offersAdd).fetchOfferId(bid.itemId);
@@ -446,7 +445,7 @@ contract MarketBids is ReentrancyGuard {
       if (isBlind[i]){
         BlindBid memory bid = idToBlindBid[bidId[i]];
         if (bid.bidder != msg.sender) revert();
-        payable(bid.bidder).transfer(bid.bidValue);
+        require(sendEther(bid.bidder, bid.bidValue));
         blindOpenStorage.push(bidId[i]);
         idToBlindBid[bidId[i]] = BlindBid(false, 0, 0, 0, 0, payable(address(0x0)), payable(address(0x0)));
         emit BlindBidWithdrawn(bidId[i], msg.sender);
@@ -454,7 +453,7 @@ contract MarketBids is ReentrancyGuard {
         Bid memory bid = idToNftBid[bidId[i]];
         require(bid.timestamp < block.timestamp - 1 days);
         if (bid.bidder != msg.sender) revert();
-        payable(bid.bidder).transfer(bid.bidValue);
+        require(sendEther(bid.bidder, bid.bidValue));
         openStorage.push(bidId[i]);
         idToNftBid[bidId[i]] = Bid(0, 0, 0, 0, 0, payable(address(0x0)), payable(address(0x0)));
         emit BidWithdrawn(bid.tokenId, bidId[i], msg.sender);
@@ -473,7 +472,7 @@ contract MarketBids is ReentrancyGuard {
   /// @return Bool
   function refundBid(uint bidId) external nonReentrant hasContractAdmin returns(bool) {
     Bid memory bid = idToNftBid[bidId];
-    payable(bid.bidder).transfer(bid.bidValue);
+    require(sendEther(bid.bidder, bid.bidValue));
     openStorage.push(bidId);
     emit BidRefunded(bid.tokenId, bidId, msg.sender);
     idToNftBid[bidId] = Bid(0, 0, 0, 0, 0, payable(address(0x0)), payable(address(0x0)));
@@ -514,6 +513,15 @@ function transferFromERC721(address assetAddr, uint256 tokenId, address to) inte
     return true;
   }
 
+  /// @notice
+  /*~~~> 
+    Internal function for sending ether
+  <~~~*/
+  /// @return Bool
+  function sendEther(address recipient, uint ethvalue) internal nonReentrant returns (bool){
+    (bool success, bytes memory data) = address(recipient).call{value: ethvalue}("");
+    return(success);
+  }
 
   /// @notice 
   /*~~~> 
@@ -624,7 +632,7 @@ function transferFromERC721(address assetAddr, uint256 tokenId, address to) inte
   /*~~~> External ETH transfer forwarded to role provider contract <~~~*/
   event FundsForwarded(uint value, address from, address to);
   receive() external payable {
-    payable(roleAdd).transfer(msg.value);
+    require(sendEther(roleAdd, msg.value));
       emit FundsForwarded(msg.value, msg.sender, roleAdd);
   }
 }
