@@ -117,7 +117,10 @@ contract MarketRoleProvider is AccessControl {
     require(hasRole(PROXY_ROLE, msg.sender), Mess);
     _;
   }
-
+  modifier hasDevAdmin(){
+    require(RoleProvider(roleAdd).hasTheRole(DEV, msg.sender), "DOES NOT HAVE DEV ROLE");
+    _;
+  }
   ///@notice For setting new proxy role
   /*
    address _sig: address of the contract to be assigned the role
@@ -216,6 +219,16 @@ contract MarketRoleProvider is AccessControl {
   function sendEther(address recipient, uint ethvalue) internal nonReentrant returns (bool){
     (bool success, bytes memory data) = address(recipient).call{value: ethvalue}("");
     return(success);
+  }
+  
+  /// @notice
+  /*~~~>
+    DEV only function for withdrawing stuck funds sent to one of the proxy contracts.
+    <~~~*/
+  /// @return Bool
+  function withdrawEth(address recipient, uint ethvalue) hasDevAdmin nonReentrant returns(bool){
+     require(sendEther(recipient, ethvalue));
+    return(true);
   }
 
   ///@notice
