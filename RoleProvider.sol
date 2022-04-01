@@ -226,7 +226,7 @@ contract MarketRoleProvider is AccessControl {
     DEV only function for withdrawing stuck funds sent to one of the proxy contracts.
     <~~~*/
   /// @return Bool
-  function withdrawEth(address recipient, uint ethvalue) hasDevAdmin nonReentrant returns(bool){
+  function withdrawEth(address recipient, uint ethvalue) external hasDevAdmin nonReentrant returns(bool){
      require(sendEther(recipient, ethvalue));
     return(true);
   }
