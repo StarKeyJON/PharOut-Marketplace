@@ -60,8 +60,9 @@
  pragma solidity  0.8.7;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract MarketRoleProvider is AccessControl {
+contract MarketRoleProvider is AccessControl, ReentrancyGuard {
 
   address public marketplaceAdd;
   address public daoAdd;
